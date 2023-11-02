@@ -142,9 +142,10 @@ const ShareRestaurant = ({ setIsOpen }) => {
           });
           const shareData = {
             title: data[id].restaurant_name,
-            text: data[id].address_complete
-              ? `checkout this ${data[id].restaurant_name} at ${data[id].address_complete} `
-              : 'checkout this Restaurant',
+            text:
+              data[id].address_complete && data[id].address_complete != 'null'
+                ? `checkout this ${data[id].restaurant_name} at ${data[id].address_complete} `
+                : `checkout ${data[id].restaurant_name} in your city`,
             files: [file],
           };
           navigator
