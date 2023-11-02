@@ -1,21 +1,16 @@
-import React, { useState, useRef } from 'react';
-import Draggable from 'react-draggable';
+import React, { useState } from 'react';
 import { BiSolidOffer } from 'react-icons/bi';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { MdArrowBackIos } from 'react-icons/md';
+import { MdArrowBackIos, MdShare } from 'react-icons/md';
 import { useSelector } from 'react-redux';
-import fastorLogo from '../assets/Fastor7.webp';
-
-import { useWindowSize } from '../hooks/useWindowSize';
+import SpringModal from '../components/modal/springModal';
 const Container = styled.div`
   position: relative;
 `;
 const ImageContainer = styled.div`
-  position: absolute;
-  width: 100vw;
-  height: 95vh;
-  z-index: -20;
+  position: relative;
+  z-index: 0;
 `;
 const DetailsContainer = styled.div`
   position: absolute;
@@ -42,117 +37,67 @@ const Overlay = styled.div`
   top: 0;
   left: 0;
 `;
-
 const RestaurantDetails = () => {
-  const { width, height } = useWindowSize();
+  const [isOpen, setIsOpen] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
-  const [logoPosition, setLogoPosition] = useState({ x: 0, y: 0 });
-  const canvasRef = useRef(null);
   const restoData = useSelector((state) => state.restaurants);
   let data;
-  const canvasWidth = width; // Set the width of the canvas
-  const canvasHeight = height - 200; // Set the height of the canvas
-  const maxX = canvasWidth - 298; // Subtract the width of the logo from the canvas width
-  const maxY = canvasHeight - 32; // Subtract the height of the logo from the canvas height
   if (restoData.length) {
     data = restoData;
   } else data = JSON.parse(localStorage.getItem('data'));
 
-  const handleDrag = (e, ui) => {
-    const { x, y } = ui;
-    setLogoPosition({ x, y });
-  };
-
-  const handleShareClick = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    const restaurantImg = new Image();
-    restaurantImg.crossOrigin = 'anonymous';
-    const logoImg = new Image();
-    logoImg.crossOrigin = 'anonymous';
-
-    restaurantImg.src = data[id].images[0].url;
-    logoImg.src = fastorLogo;
-
-    restaurantImg.onload = () => {
-      ctx.drawImage(restaurantImg, 0, 0, canvas.width, canvas.height);
-      ctx.drawImage(logoImg, logoPosition.x, logoPosition.y, 298, 31); // You can adjust the width and height of the logo as per your requirement
-
-      if (navigator.share) {
-        canvas.toBlob((blob) => {
-          const file = new File([blob], 'superimposed-image.png', {
-            type: 'image/png',
-          });
-          const shareData = {
-            title: 'Superimposed Image',
-            text: 'f out this image!',
-            files: [file],
-          };
-          navigator
-            .share(shareData)
-            .then(() => console.log('Shared successfully'))
-            .catch((error) => console.error('Error sharing:', error));
-        }, 'image/png');
-      } else {
-        //download it if not able to share
-        canvas.toBlob((blob) => {
-          const url = URL.createObjectURL(blob);
-
-          // Create a temporary anchor element and trigger a download
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'superimposed-image.png';
-          a.click();
-
-          // Clean up
-          URL.revokeObjectURL(url);
-        }, 'image/png');
-        console.error('Web Share API is not supported.');
-      }
-    };
-  };
-
   return (
-    <div className=" relative h-screen">
-      <Draggable
-        className="absolute z-20"
-        position={logoPosition}
-        onDrag={handleDrag}
-        bounds={{ left: 0, top: 0, right: maxX, bottom: maxY }}
-      >
-        <img
-          crossOrigin="anonymous"
-          src={fastorLogo}
-          alt="Fastor Logo"
-          className="absolute cursor-pointer"
-        />
-      </Draggable>
-      <ImageContainer>
-        <img
-          src={data[id].images[0].url}
-          style={{ width: canvasWidth, height: canvasHeight }}
-        />
-      </ImageContainer>
+    <Container className="flex justify-center align-center">
       <IconContainter onClick={() => navigate('/restaurants-list')}>
         <MdArrowBackIos />
       </IconContainter>
-      <canvas
-        crossOrigin="anonymous"
-        ref={canvasRef}
-        width={canvasWidth}
-        height={canvasHeight}
-        className="mb-4 border"
-      />
-
-      <button
-        onClick={handleShareClick}
-        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+      <div
+        onClick={() => setIsOpen(true)}
+        className="bg-white flex flex-row items-center gap-2 rounded-lg right-3 justify-center  p-2 absolute font-medium px-4 py-2  hover:opacity-90 transition-opacity top-4 z-30"
       >
-        Share Image
-      </button>
-    </div>
+        <MdShare />
+        share
+      </div>
+      <ImageContainer>
+        <img
+          src={data[id].images[0].url}
+          style={{ width: '100%', height: '25rem' }}
+        />
+        <Overlay></Overlay>
+      </ImageContainer>
+      <DetailsContainer>
+        <div style={{ fontSize: '1rem', fontWeight: '700' }}>
+          {data[id].restaurant_name}
+        </div>
+        <div style={{ fontSize: '0.8rem', marginTop: '0.35rem' }}>
+          {data[id].address_complete && data[id].address_complete != 'null'
+            ? data[id].address_complete
+            : data[id].location && data[id].location.location_address_2
+            ? data[id].location.location_address_2
+            : ''}
+        </div>
+        <div
+          style={{
+            gap: '0.15rem',
+            marginBlock: '0.5rem',
+            fontWeight: '500',
+            color: '#D3906F',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <BiSolidOffer /> 4 Offers trending
+        </div>
+
+        <div style={{ fontSize: '0.75rem', marginTop: '1rem' }}>
+          Our delicate vanilla cake swirled with chocolate and filled with mocha
+          chocolate chip cream and a layer of dark chocolate ganache
+        </div>
+      </DetailsContainer>
+      <SpringModal isOpen={isOpen} setIsOpen={setIsOpen} />
+    </Container>
   );
 };
 
