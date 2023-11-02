@@ -137,12 +137,14 @@ const ShareRestaurant = ({ setIsOpen }) => {
 
       if (navigator.share) {
         canvas.toBlob((blob) => {
-          const file = new File([blob], 'superimposed-image.png', {
+          const file = new File([blob], `${data[id].restaurant_name}.png`, {
             type: 'image/png',
           });
           const shareData = {
-            title: 'Superimposed Image',
-            text: 'f out this image!',
+            title: data[id].restaurant_name,
+            text: data[id].address_complete
+              ? `checkout this ${data[id].restaurant_name} at ${data[id].address_complete} `
+              : 'checkout this Restaurant',
             files: [file],
           };
           navigator
@@ -173,7 +175,7 @@ const ShareRestaurant = ({ setIsOpen }) => {
   return (
     <div className=" relative ">
       <Draggable
-        className="absolute z-20"
+        className="absolute z-20 bg-orange-500"
         position={logoPosition}
         onDrag={handleDrag}
         bounds={{ left: 0, top: 0, right: maxX, bottom: maxY }}
@@ -184,7 +186,7 @@ const ShareRestaurant = ({ setIsOpen }) => {
           alt="Fastor Logo"
           width={imageDimensions.width}
           height={imageDimensions.height}
-          className="absolute cursor-pointer"
+          className="absolute cursor-pointer bg-orange-500 p-2"
         />
       </Draggable>
       <ImageContainer>
@@ -203,7 +205,7 @@ const ShareRestaurant = ({ setIsOpen }) => {
         height={canvasHeight}
         className="mb-4 border"
       />
-
+      <div>Move the highlighted logo to generate a Signature</div>
       <button
         onClick={handleShareClick}
         className="mt-4 mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
