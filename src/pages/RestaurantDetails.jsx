@@ -6,12 +6,16 @@ import styled from 'styled-components';
 import { MdArrowBackIos } from 'react-icons/md';
 import { useSelector } from 'react-redux';
 import fastorLogo from '../assets/Fastor7.webp';
+
+import { useWindowSize } from '../hooks/useWindowSize';
 const Container = styled.div`
   position: relative;
 `;
 const ImageContainer = styled.div`
   position: absolute;
-  z-index: 0;
+  width: 100vw;
+  height: 95vh;
+  z-index: -20;
 `;
 const DetailsContainer = styled.div`
   position: absolute;
@@ -38,13 +42,19 @@ const Overlay = styled.div`
   top: 0;
   left: 0;
 `;
+
 const RestaurantDetails = () => {
+  const { width, height } = useWindowSize();
   const { id } = useParams();
   const navigate = useNavigate();
   const [logoPosition, setLogoPosition] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
   const restoData = useSelector((state) => state.restaurants);
   let data;
+  const canvasWidth = width; // Set the width of the canvas
+  const canvasHeight = height - 200; // Set the height of the canvas
+  const maxX = canvasWidth - 298; // Subtract the width of the logo from the canvas width
+  const maxY = canvasHeight - 32; // Subtract the height of the logo from the canvas height
   if (restoData.length) {
     data = restoData;
   } else data = JSON.parse(localStorage.getItem('data'));
@@ -59,62 +69,90 @@ const RestaurantDetails = () => {
     const ctx = canvas.getContext('2d');
 
     const restaurantImg = new Image();
+    restaurantImg.crossOrigin = 'anonymous';
     const logoImg = new Image();
+    logoImg.crossOrigin = 'anonymous';
 
     restaurantImg.src = data[id].images[0].url;
     logoImg.src = fastorLogo;
 
     restaurantImg.onload = () => {
       ctx.drawImage(restaurantImg, 0, 0, canvas.width, canvas.height);
-      ctx.drawImage(logoImg, logoPosition.x, logoPosition.y, 100, 100); // You can adjust the width and height of the logo as per your requirement
+      ctx.drawImage(logoImg, logoPosition.x, logoPosition.y, 298, 31); // You can adjust the width and height of the logo as per your requirement
 
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
+      if (navigator.share) {
+        canvas.toBlob((blob) => {
+          const file = new File([blob], 'superimposed-image.png', {
+            type: 'image/png',
+          });
+          const shareData = {
+            title: 'Superimposed Image',
+            text: 'f out this image!',
+            files: [file],
+          };
+          navigator
+            .share(shareData)
+            .then(() => console.log('Shared successfully'))
+            .catch((error) => console.error('Error sharing:', error));
+        }, 'image/png');
+      } else {
+        //download it if not able to share
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
 
-        // Create a temporary anchor element and trigger a download
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'superimposed-image.png';
-        a.click();
+          // Create a temporary anchor element and trigger a download
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'superimposed-image.png';
+          a.click();
 
-        // Clean up
-        URL.revokeObjectURL(url);
-      }, 'image/png');
+          // Clean up
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+        console.error('Web Share API is not supported.');
+      }
     };
   };
+
   return (
-    <Container>
-      <IconContainter onClick={() => navigate('/restaurants-list')}>
-        <MdArrowBackIos />
-      </IconContainter>
+    <div className=" relative h-screen">
+      <Draggable
+        className="absolute z-20"
+        position={logoPosition}
+        onDrag={handleDrag}
+        bounds={{ left: 0, top: 0, right: maxX, bottom: maxY }}
+      >
+        <img
+          crossOrigin="anonymous"
+          src={fastorLogo}
+          alt="Fastor Logo"
+          className="absolute cursor-pointer"
+        />
+      </Draggable>
       <ImageContainer>
         <img
           src={data[id].images[0].url}
-          style={{ width: '100%', height: 600 }}
+          style={{ width: canvasWidth, height: canvasHeight }}
         />
       </ImageContainer>
-      <div className="flex flex-col items-center justify-center h-screen">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={600}
-          className="mb-4 border"
-        />
-        <Draggable position={logoPosition} onDrag={handleDrag}>
-          <img
-            src={fastorLogo}
-            alt="Fastor Logo"
-            className="absolute cursor-pointer"
-          />
-        </Draggable>
-        <button
-          onClick={handleShareClick}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
-        >
-          Share Image
-        </button>
-      </div>
-    </Container>
+      <IconContainter onClick={() => navigate('/restaurants-list')}>
+        <MdArrowBackIos />
+      </IconContainter>
+      <canvas
+        crossOrigin="anonymous"
+        ref={canvasRef}
+        width={canvasWidth}
+        height={canvasHeight}
+        className="mb-4 border"
+      />
+
+      <button
+        onClick={handleShareClick}
+        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+      >
+        Share Image
+      </button>
+    </div>
   );
 };
 
